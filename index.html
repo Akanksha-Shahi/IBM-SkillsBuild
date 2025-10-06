@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study Planner</title>
+    <meta name="description"
+        content="Organize, track, and visualize your study sessions. Includes reminders + task timelines.">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body> <!-- Header -->
+    <header class="app-header" role="banner">
+        <div class="brand">
+            <div class="logo" aria-hidden="true">🎓</div>
+            <h1 class="title">Smart Study Planner</h1>
+        </div>
+        <div class="header-actions">
+            <!-- Buttons: maybe refactor into a toolbar later -->
+            <button id="addTaskBtn" class="btn primary" aria-haspopup="dialog">Add Task</button>
+            <button id="exportBtn" class="btn" title="Export tasks">Export</button>
+            <button id="importBtn" class="btn" title="Import tasks">Import</button>
+
+            <input type="file" id="importFile" accept="application/json" hidden>
+
+            <!-- Reminder permission button (need to check support) -->
+            <button id="notifyPermBtn" class="btn" title="Enable notifications">Enable Reminders</button>
+        </div>
+    </header> <!-- Main section -->
+    <main class="app-main" role="main"> <!-- Filter + progress controls -->
+        <section class="controls" aria-label="Search and filters">
+            <div class="filters"> <label> <span class="label">Search</span> <input id="searchInput" type="search"
+                        placeholder="Search title, subject, notes"> </label>
+                <label>
+                    <span class="label">Subject</span>
+                    <input id="subjectFilter" type="text" placeholder="e.g. Math">
+                </label>
+
+                <label>
+                    <span class="label">Status</span>
+                    <select id="statusFilter">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span class="label">Sort</span>
+                    <select id="sortSelect">
+                        <!-- Might add more sort options later -->
+                        <option value="dueAsc">Due date ↑</option>
+                        <option value="dueDesc">Due date ↓</option>
+                        <option value="priorityDesc">Priority ↓</option>
+                        <option value="priorityAsc">Priority ↑</option>
+                        <option value="titleAsc">Title A–Z</option>
+                        <option value="titleDesc">Title Z–A</option>
+                    </select>
+                </label>
+            </div>
+
+            <!-- Progress tracker -->
+            <div class="progress" aria-live="polite">
+                <div id="progressText">0 of 0 completed</div>
+                <div class="progress-bar" aria-hidden="true">
+                    <div id="progressBarFill"></div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Layout wrapper -->
+        <section class="layout">
+            <!-- Left: tasks -->
+            <div class="tasks" aria-label="Task list">
+                <ul id="taskList" class="task-list" aria-live="polite"></ul>
+            </div>
+
+            <!-- Right: timeline view -->
+            <aside class="timeline" aria-label="Timeline">
+                <div class="timeline-header">
+                    <h2>Timeline</h2>
+                    <div class="timeline-nav">
+                        <button id="prevWeek" class="btn" title="Previous week">◀</button>
+                        <button id="todayBtn" class="btn">Today</button>
+                        <button id="nextWeek" class="btn" title="Next week">▶</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic grid generated in JS -->
+                <div id="timelineGrid" class="timeline-grid" role="table" aria-label="Tasks by date"></div>
+            </aside>
+        </section>
+    </main> <!-- Dialog for adding/editing tasks -->
+    <dialog id="taskDialog" aria-labelledby="taskDialogTitle">
+        <form id="taskForm" method="dialog">
+            <header class="dialog-header">
+                <h2 id="taskDialogTitle">Add Task</h2> <button type="button" id="closeDialog" class="icon-btn"
+                    aria-label="Close">✕</button>
+            </header>
+            <div class="dialog-body">
+                <input type="hidden" id="taskId">
+                <div class="grid">
+                    <!-- Probably need validation on some of these later -->
+                    <label>
+                        <span class="label">Title</span>
+                        <input id="titleInput" type="text" required maxlength="120" placeholder="Read Chapter 3">
+                    </label>
+
+                    <label>
+                        <span class="label">Subject</span>
+                        <input id="subjectInput" type="text" maxlength="60" placeholder="Physics">
+                    </label>
+
+                    <label>
+                        <span class="label">Due date</span>
+                        <input id="dueDateInput" type="date" required>
+                    </label>
+
+                    <label>
+                        <span class="label">Due time</span>
+                        <input id="dueTimeInput" type="time">
+                    </label>
+
+                    <label>
+                        <span class="label">Duration (hrs)</span>
+                        <input id="durationInput" type="number" step="0.25" min="0" max="24" placeholder="1.5">
+                    </label>
+
+                    <label>
+                        <span class="label">Priority</span>
+                        <select id="priorityInput">
+                            <option value="3">High</option>
+                            <option value="2" selected>Medium</option>
+                            <option value="1">Low</option>
+                        </select>
+                    </label>
+
+                    <!-- Notes area -->
+                    <label class="full">
+                        <span class="label">Notes</span>
+                        <textarea id="notesInput" rows="3" placeholder="Key chapters, resources..."></textarea>
+                    </label>
+
+                    <label>
+                        <input id="reminderCheckbox" type="checkbox">
+                        <span>Reminder 30 min before</span>
+                    </label>
+                </div>
+            </div>
+
+            <footer class="dialog-footer">
+                <button type="submit" class="btn primary" id="saveTaskBtn">Save</button>
+                <button type="button" class="btn" id="deleteTaskBtn">Delete</button>
+            </footer>
+        </form>
+    </dialog> <!-- Template for rendering a task --> <template id="taskItemTemplate">
+        <li class="task-item">
+            <div class="left"> <input type="checkbox" class="complete-toggle" aria-label="Mark complete"> </div>
+            <div class="content">
+                <div class="row top">
+                    <span class="title"></span>
+                    <span class="badges">
+                        <span class="badge priority"></span>
+                        <span class="badge subject"></span>
+                    </span>
+                </div>
+
+                <div class="row meta">
+                    <span class="due"></span>
+                    <span class="duration"></span>
+                </div>
+
+                <div class="row notes"></div>
+            </div>
+
+            <div class="right">
+                <button class="icon-btn edit-btn" title="Edit" aria-label="Edit">✎</button>
+                <button class="icon-btn del-btn" title="Delete" aria-label="Delete">🗑</button>
+            </div>
+        </li>
+    </template> <!-- JS at bottom (as usual) -->
+    <script src="script.js"></script>
+</body>
+
+</html>
